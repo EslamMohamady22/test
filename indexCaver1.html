@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>خدمة طباعة غلاف المواد الدراسية</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    
+</head>
+<style>
+    @import url("https://fonts.googleapis.com/css2?family=El Messiri:wght@400;700&display=swap");
+</style>
+<body>
+    <header>
+        <img src="logo.png" alt="مولد البطاقات">
+        <div class="header-content">
+            <h1> طباعة غلاف المواد الدراسية عرضي</h1>
+        </div>
+    </header>
+
+
+    <div class="card">
+    <form id="greetingForm" dir="rtl">
+            <label for="school">الفصل الدراسي</label>
+            <div style="display: flex;  align-items: baseline; gap: 10px;">
+                <input type="text" id="school" name="school" required>
+                <input type="color" id="schoolColor" name="schoolColor" value="#000000">
+            </div>
+
+            <label for="teacher">اسم المعلم</label>
+            <div style="display: flex;  align-items: baseline; gap: 10px;">
+                <input type="text" id="teacher" name="teacher" required>
+                <input type="color" id="teacherColor" name="teacherColor" value="#000000">
+            </div>
+            <label for="director">قائد المدرسة</label>
+            <div style="display: flex;  align-items: baseline; gap: 10px;">
+                <input type="text" id="director" name="director" required>
+                <input type="color" id="directorColor" name="directorColor" value="#000000">
+            </div>
+            <br><br>
+            <button type="submit">معاينة</button>
+        </form>
+
+        <!-- Preview image will be displayed here -->
+        <div id="imageContainer"></div>
+
+        <br><br>
+
+        <div class="download-button-container">
+             <a href="#" class="download-link" download="greeting-card.jpg">تحميل النموذج</a>
+             <a type="button" id="printPdfButton">طباعة ملف PDF</a>
+        </div>
+
+        <br>
+    </div>
+
+    <script>
+        const greetingForm = document.getElementById('greetingForm');
+        const imageContainer = document.getElementById('imageContainer');
+
+        greetingForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const school = formData.get('school');
+            const teacher = formData.get('teacher');
+            const director = formData.get('director');
+            const schoolColor = formData.get('schoolColor');
+            const teacherColor = formData.get('teacherColor');
+            const directorColor = formData.get('directorColor');
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            const coverImage = localStorage.getItem('coverImage');
+            if (coverImage) {
+                const image = new Image();
+                image.src = 'ard.jpg';
+                // image.src = coverImage;
+                image.onload = function() {
+                    const aspectRatio = image.width / image.height;
+                    const canvasWidth = 400; // Set the desired width for the canvas
+                    const canvasHeight = canvasWidth / aspectRatio;
+
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+
+                    context.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+
+                    context.font = 'bold italic 10px "El Messiri"';
+                    context.fillStyle = schoolColor;
+                    context.fillText(school, 170, 65); // Adjust text position as needed
+
+                    context.font = 'bold 10px "El Messiri"';
+                    context.fillStyle = teacherColor;
+                    context.fillText(teacher, 150, 260); // Adjust text position as needed
+
+                    context.fillStyle = directorColor;
+                    context.fillText(director, 150, 270); // Adjust text position as needed
+
+                    const imageURL = canvas.toDataURL('image/jpeg');
+                    const previewImage = document.createElement('img');
+                    previewImage.src = imageURL;
+                    imageContainer.innerHTML = '';
+                    imageContainer.appendChild(previewImage);
+                };
+            }
+        });
+
+        // Add printing functionality
+        const printPdfButton = document.getElementById('printPdfButton');
+        printPdfButton.addEventListener('click', function() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            const coverImage = localStorage.getItem('coverImage');
+            if (coverImage) {
+                const image = new Image();
+                image.src = 'ard.jpg';
+                // image.src = coverImage;
+                image.onload = function() {
+                    const aspectRatio = image.width / image.height;
+                    const canvasWidth = 1500; // Set the desired width for the canvas
+                    const canvasHeight =  1150;
+
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+
+                    context.drawImage(image, 0, 0, canvasWidth, canvasHeight);
+
+                    const formData = new FormData(greetingForm);
+                    const school = formData.get('school');
+                    const teacher = formData.get('teacher');
+                    const director = formData.get('director');
+                    const schoolColor = formData.get('schoolColor');
+                    const teacherColor = formData.get('teacherColor');
+                    const directorColor = formData.get('directorColor');
+
+                    context.font = 'bold italic 50px "El Messiri"';
+                    context.fillStyle = schoolColor;
+                    context.fillText(school, 600, 270); // Adjust text position as needed
+
+                    context.font = 'bold 30px "El Messiri"';
+                    context.fillStyle = teacherColor;
+                    context.fillText(teacher, 600, 1050); // Adjust text position as needed
+
+                    context.fillStyle = directorColor;
+                    context.fillText(director, 600, 1100); // Adjust text position as needed
+
+                    const imageURL = canvas.toDataURL('image/jpeg');
+
+                    const printWindow = window.open('', '_blank');
+                    const printDocument = printWindow.document;
+                    printDocument.write('<html><head><title>Print Preview</title></head><body>');
+                    printDocument.write(`<img src="${imageURL}" style="max-width:100%;height:auto;">`);
+                    printDocument.write('</body></html>');
+                    printWindow.document.close();
+                   
+            setTimeout(() => {
+      printWindow.print();
+    }, 300);
+                };
+            }
+        });
+    </script>
+
+    <footer><br></footer>
+</body>
+</html>

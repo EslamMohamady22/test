@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>تسجيل الدخول ولوحة التحكم - غلاف المواد الدراسية</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'El Messiri', sans-serif;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-top: 50px;
+        }
+        label {
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="password"],
+        input[type="file"] {
+            margin-bottom: 20px;
+            padding: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .preview-box {
+            margin-top: 20px;
+        }
+        .preview-box img {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px auto;
+            border: 1px solid #ccc;
+            cursor: pointer; /* Add cursor pointer to indicate the image can be selected */
+        }
+        .delete-button {
+            cursor: pointer;
+            color: red;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .custom-file-upload:hover {
+            background-color: #0056b3;
+        }
+
+        .button-text {
+            font-family: 'El Messiri', sans-serif;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <form id="loginForm">
+        <h1>تسجيل الدخول</h1>
+        <label for="username">اسم المستخدم:</label>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="password">كلمة المرور:</label>
+        <input type="password" id="password" name="password" required><br><br>
+        <button type="submit">تسجيل الدخول</button>
+    </form>
+
+    <div id="controlPanel" style="display: none;">
+        <form id="coverForm" enctype="multipart/form-data">
+            <h1>لوحة التحكم</h1>
+            <label for="coverImage" class="custom-file-upload">
+                <span class="button-text">تحميل غلاف</span>
+            </label>
+            <input type="file" id="coverImage" name="coverImage" accept="image/*" required multiple style="display: none;">
+            <!-- مربع لعرض الصورة الحالية -->
+            <div class="preview-box">
+                <label>الصورة الحالية:</label>
+                <img id="currentImagePreview" src="#" alt="الصورة الحالية">
+                <span class="delete-button" onclick="deleteCurrentImage()">X</span>
+            </div>
+            <div id="imageList" class="preview-box" style="display: none;">
+                <label>الصور المحملة:</label>
+                <div id="uploadedImages"></div>
+            </div>
+            <button type="submit">تحديث الغلاف</button>
+        </form>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const controlPanel = document.getElementById('controlPanel');
+        const coverForm = document.getElementById('coverForm');
+        const currentImagePreview = document.getElementById('currentImagePreview');
+        const imageList = document.getElementById('imageList');
+        const uploadedImages = document.getElementById('uploadedImages');
+
+        let selectedImage = null;
+
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = this.username.value;
+            const password = this.password.value;
+
+            // Replace this with your actual authentication logic
+            if (username === 'admin' && password === '123') {
+                // Hide login form
+                loginForm.style.display = 'none';
+                // Show control panel
+                controlPanel.style.display = 'block';
+
+                // عرض الصورة الحالية (إذا كانت موجودة)
+                const currentCoverImage = localStorage.getItem('coverImage');
+                if (currentCoverImage) {
+                    currentImagePreview.src = currentCoverImage;
+                }
+
+                // عرض الصور المحملة من قبل (إذا كانت موجودة)
+                const uploadedImagesData = JSON.parse(localStorage.getItem('uploadedImages'));
+                if (uploadedImagesData && uploadedImagesData.length > 0) {
+                    uploadedImagesData.forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.src = imgData.src;
+                        img.onclick = function() {
+                            if (selectedImage) {
+                                selectedImage.style.border = 'none';
+                            }
+                            selectedImage = this;
+                            this.style.border = '2px solid red';
+
+                            // عرض الصورة المحددة في الصورة الحالية
+                            currentImagePreview.src = this.src;
+                        };
+                        uploadedImages.appendChild(img);
+                        imageList.style.display = 'block';
+
+                        // إنشاء زر "x" لحذف الصورة
+                        const deleteButton = document.createElement('span');
+                        deleteButton.className = 'delete-button';
+                        deleteButton.textContent = 'X';
+                        deleteButton.onclick = function() {
+                            deleteImage(img.src);
+                        };
+                        img.parentNode.appendChild(deleteButton);
+                    });
+                }
+            } else {
+                // Display an error message if authentication fails
+                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            }
+        });
+
+        coverForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            if (!selectedImage) {
+                alert('يرجى اختيار صورة للغلاف');
+                return;
+            }
+            
+            localStorage.setItem('coverImage', selectedImage.src);
+            alert('تم تحديث الغلاف بنجاح');
+        });
+
+        function deleteCurrentImage() {
+            // حذف الصورة من التخزين المحلي
+            localStorage.removeItem('coverImage');
+            // تحديث عرض الصورة
+            currentImagePreview.src = '';
+
+            // حذف الزر "x" لحذف الصورة
+            const deleteButton = uploadedImages.querySelector('.delete-button');
+            if (deleteButton) {
+                deleteButton.parentNode.removeChild(deleteButton);
+            }
+        }
+
+        function loadImage(event) {
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        img.onclick = function() {
+                            if (selectedImage) {
+                                selectedImage.style.border = 'none';
+                            }
+                            selectedImage = this;
+                            this.style.border = '2px solid red';
+
+                            // عرض الصورة المحددة في الصورة الحالية
+                            currentImagePreview.src = this.src;
+                        };
+                        uploadedImages.appendChild(img);
+                        imageList.style.display = 'block';
+
+                        // إنشاء زر "x" لحذف الصورة
+                        const deleteButton = document.createElement('span');
+                        deleteButton.className = 'delete-button';
+                        deleteButton.textContent = 'X';
+                        deleteButton.onclick = function() {
+                            deleteImage(img.src);
+                        };
+                        img.parentNode.appendChild(deleteButton);
+
+                        // تخزين الصور المحملة في التخزين المحلي
+                        let uploadedImagesData = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+                        uploadedImagesData.push({ src: event.target.result });
+                        localStorage.setItem('uploadedImages', JSON.stringify(uploadedImagesData));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        function deleteImage(src) {
+            const uploadedImagesData = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+            const remainingImages = uploadedImagesData.filter(imgData => imgData.src !== src);
+            localStorage.setItem('uploadedImages', JSON.stringify(remainingImages));
+            
+            const imgToDelete = uploadedImages.querySelector(`img[src="${src}"]`);
+            if (imgToDelete) {
+                imgToDelete.parentNode.removeChild(imgToDelete);
+            }
+            
+            const deleteButtonToDelete = uploadedImages.querySelector(`.delete-button`);
+            if (deleteButtonToDelete) {
+                deleteButtonToDelete.parentNode.removeChild(deleteButtonToDelete);
+            }
+        }
+
+        document.getElementById('coverImage').addEventListener('change', loadImage);
+    </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>خدمة طباعة سجلات المتابعة للطلاب</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</head>
+<body>
+    <header>
+        <img src="logo.png" alt="مولد البطاقات">
+        <div class="header-content">
+            <h1>طباعة سجلات المتابعة للطلاب</h1>
+        </div>
+    </header>
+
+    <div class="card">
+ 
+        <form id="greetingForm">
+        <label for="excelFile">تحميل ملف Excel:</label>
+            <input type="file" id="excelFile" name="excelFile" accept=".xlsx" >
+
+            <label for="studentNames">أسماء الطلاب (مفصولة بفواصل أو فواصل جديدة):</label>
+            <textarea id="studentNames" name="studentNames" placeholder="أدخل أسماء الطلاب هنا"></textarea>
+
+            <label for="school">الصف</label>
+            <input type="text" id="school" name="school" required>
+
+            <label for="class">المادة</label>
+            <input type="text" id="class" name="class" required>
+
+            <label for="year">العام الدراسي</label>
+            <input type="text" id="year" name="year" required>
+
+            <label for="semester">الفصل الدراسي</label>
+            <input type="text" id="semester" name="semester" required>
+
+            <label for="teacher">اسم المعلم</label>
+            <input type="text" id="teacher" name="teacher" required>
+
+            <label for="director">قائد المدرسة</label>
+            <input type="text" id="director" name="director" required>
+
+            <button type="submit">انشاء وملء النموذج</button>
+        </form>
+
+        <!-- Preview image will be displayed here -->
+        <div id="imageContainer">...</div>
+
+        <br><br>
+
+        <div class="download-button-container">
+             <a href="#" class="download-link" download="greeting-card.jpg">تحميل النموذج</a>
+             <a type="button" id="printPdfButton">طباعة ملف PDF</a>
+        </div>
+
+        <br>
+    </div>
+
+    <script>
+        const card = document.querySelector('.card');
+        const greetingForm = document.getElementById('greetingForm');
+        const imageContainers = document.getElementById('imageContainer');
+        const printPdfButton = document.getElementById('printPdfButton');
+        const millimetersToPixels = (mm) => {
+            return mm * (96 / 25.4); // 96 pixels per inch, 25.4 mm per inch
+        };
+        const A4_WIDTH_MM = 297; // A4 width in millimeters (landscape)
+        const A4_HEIGHT_MM = 210; // A4 height in millimeters (landscape)
+
+        greetingForm.addEventListener('submit', function(event) 
+        {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const school = formData.get('school');
+            const className = formData.get('class');
+            const year = formData.get('year');
+            const semester = formData.get('semester');
+            const teacher = formData.get('teacher');
+            const director = formData.get('director');
+
+            const excelFile = document.getElementById('excelFile').files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const studentsArray = parseExcel(workbook);
+
+                // قراءة الأسماء المدخلة من حقل النص (textarea)
+                const studentNamesInput = formData.get('studentNames');
+                const userInputNames = studentNamesInput.split(/[,\n]+/);
+
+                // دمج الأسماء
+                const allStudentNames = studentsArray.concat(userInputNames);
+
+                // Calculate the number of pages needed
+                // عدد خانات الموجودة بالصورة
+                const totalPages = Math.ceil(allStudentNames.length / 13);
+
+                const drawPage = (pageIndex) => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+
+                    const image = new Image();
+                    image.src = 'bg.jpg'; // Set the background image source
+
+                    image.onload = function() {
+                        canvas.width = millimetersToPixels(A4_WIDTH_MM);
+                        canvas.height = millimetersToPixels(A4_HEIGHT_MM);
+
+                        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                        context.fillStyle = '#333';
+                        context.textAlign = 'right';
+
+                        context.font = '18px Cairo';
+                        context.fillText(className, 490, 75);
+                        context.fillText(school, 490, 105);
+                        context.fillText(year, 270, 75);
+                        context.fillText(semester, 270, 105);
+                        context.fillText(teacher, 690, 760);
+                        context.fillText(director, 360, 760);
+
+                        const startIdx = pageIndex * 13;
+                        const endIdx = Math.min((pageIndex + 1) * 13, allStudentNames.length);
+                        const pageStudents = allStudentNames.slice(startIdx, endIdx);
+
+                        context.font = 'bold 9px Cairo';
+
+                        const lineHeight = 44;
+                        for (let i = 0; i < pageStudents.length; i++) {
+                            const y = 180 + i * lineHeight;
+                            context.textAlign = 'left';
+                            context.fillText(pageStudents[i], 920, y);
+                        }
+
+                        const imgData = canvas.toDataURL('image/jpeg');
+                        const img = new Image();
+                        img.src = imgData;
+                        img.classList.add('previewz');
+                        imageContainers.appendChild(img);
+                    };
+                };
+
+                // Draw each page
+                for (let i = 0; i < totalPages; i++) {
+                    drawPage(i);
+                }
+            };
+
+            reader.readAsArrayBuffer(excelFile);
+        });
+
+        function parseExcel(workbook) {
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const studentNames = [];
+            let startReading = false; // Flag to indicate when to start reading student names
+
+            for (const cellAddress in sheet) {
+                if (!startReading && cellAddress === 'N19') {
+                    startReading = true;
+                    continue; // Skip the cell N20 itself
+                }
+
+                if (startReading && cellAddress[0] === 'N' && parseInt(cellAddress.substring(1)) >= 19) {
+                    const cellValue = sheet[cellAddress].v;
+                    studentNames.push(cellValue.trim());
+                }
+            }
+            return studentNames;
+        }
+
+        printPdfButton.addEventListener('click', function() {
+            const printWindow = window.open('', '_blank');
+            const printDocument = printWindow.document;
+            printDocument.write(`
+              <html>
+                <head>
+                  <title>Print Preview</title>
+                  <style>
+                    @media print {
+                      @page {
+                        size: landscape;
+                        margin: 0; /* Remove default margin */
+                      }
+                      body {
+                        margin: 0; /* Remove default margin */
+                      }
+                      img {
+                        width: 100%;
+                        height: auto;
+                      }
+                      .card {
+                        display: block;
+                        page-break-before: auto;
+                        page-break-after: auto;
+                        page-break-inside: auto;
+                        margin: 0; /* Remove default margin */
+                      }
+                    }
+                  </style>
+                </head>
+                <body>
+            `);
+
+            const previews = document.querySelectorAll('.previewz');
+            previews.forEach(preview => {
+                const previewImage = document.createElement('img');
+                previewImage.src = preview.src;
+                printDocument.body.appendChild(previewImage);
+            });
+
+            printDocument.write(`
+                </body>
+              </html>
+            `);
+
+            setTimeout(() => {
+      printWindow.print();
+    }, 300);
+        });
+    </script>
+
+    <footer>
+        <br>
+    </footer>
+</body>
+</html>
